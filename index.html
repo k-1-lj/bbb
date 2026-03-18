@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>暖心伴侣 · 情绪日记 & 悬浮关怀</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f2f5 0%, #e6e9f0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 整体卡片 —— 模拟 PC 悬浮球 + 主面板混合风格 */
+        .app-container {
+            width: 100%;
+            max-width: 1300px;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* 左侧悬浮球风格迷你面板 (打工人桌面悬浮球既视感) */
+        .float-ball-panel {
+            flex: 0 0 280px;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 48px 48px 32px 32px;
+            box-shadow: 0 20px 40px rgba(0, 10, 30, 0.2), 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.7);
+            padding: 24px 16px;
+            height: fit-content;
+            transition: transform 0.2s ease;
+        }
+
+        .float-ball-panel:hover {
+            transform: translateY(-4px);
+        }
+
+        .ball-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .avatar-bubble {
+            width: 96px;
+            height: 96px;
+            background: #ffffffdd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 18px rgba(0,40,80,0.2);
+            border: 3px solid white;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 48px;
+            user-select: none;
+        }
+
+        .avatar-bubble:active {
+            transform: scale(0.95);
+            background: #f5f9ff;
+        }
+
+        .greeting {
+            font-weight: 600;
+            color: #1e2b3c;
+            background: rgba(255,255,255,0.6);
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            backdrop-filter: blur(4px);
+            border: 1px solid white;
+        }
+
+        .reminder-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 28px 0 20px;
+        }
+
+        .remind-item {
+            background: white;
+            border-radius: 60px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 6px 12px rgba(0,20,40,0.08);
+            border: 1px solid rgba(200,220,240,0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .remind-item:hover {
+            background: #f8fbff;
+            border-color: #9ac7ff;
+            box-shadow: 0 10px 18px rgba(0,100,200,0.12);
+        }
+
+        .remind-icon {
+            width: 40px;
+            height: 40px;
+            background: #eef4fe;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .remind-text {
+            flex: 1;
+            font-weight: 500;
+            color: #1f3a5f;
+        }
+
+        .remind-time {
+            color: #6b7f99;
+            font-size: 0.85rem;
+            background: #f0f4fa;
+            padding: 4px 10px;
+            border-radius: 30px;
+        }
+
+        /* 右侧主交互区 (聊天+日记+分析) */
+        .main-panel {
+            flex: 1;
+            min-width: 500px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 48px;
+            box-shadow: 0 25px 50px -8px rgba(0,20,50,0.25);
+            border: 1px solid rgba(255,255,255,0.8);
+            padding: 28px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* 情绪日记卡片 */
+        .diary-section {
+            background: rgba(255,255,240,0.6);
+            border-radius: 36px;
+            padding: 22px 24px;
+            border: 1px solid rgba(255,245,200,0.8);
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.8), 0 8px 12px rgba(0,20,10,0.05);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .section-title span {
+            font-size: 1.8rem;
+        }
+
+        .section-title h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e4f;
+        }
+
+        .mood-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mood-tag {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.02);
+            border: 1px solid rgba(210, 225, 245, 0.8);
+            cursor: pointer;
+            transition: 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mood-tag.selected {
+            background: #d9e9ff;
+            border-color: #5f9eff;
+            box-shadow: 0 6px 12px #b1d0ff;
+            transform: scale(1.02);
+        }
+
+        .diary-input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .diary-input-area textarea {
+            width: 100%;
+            border: none;
+            background: rgba(255,255,255,0.9);
+            border-radius: 28px;
+            padding: 18px 22px;
+            font-size: 1rem;
+            resize: none;
+            border: 1px solid white;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.02);
+            transition: 0.2s;
+        }
+
+        .diary-input-area textarea:focus {
+            outline: 2px solid #afcbff;
+            background: white;
+        }
+
+        .save-diary-btn {
+            align-self: flex-end;
+            background: #7c9cbf;
+            border: none;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 8px 16px #b3c9e0;
+            border: 1px solid #ffffff88;
+            transition: 0.15s;
+        }
+
+        .save-diary-btn:hover {
+            background: #5f83ac;
+            transform: scale(1.02);
+        }
+
+        /* 聊天区域 */
+        .chat-window {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 36px;
+            padding: 22px 24px;
+            border: 1px solid rgba(255,255,255,0.9);
+        }
+
+        .message-history {
+            background: rgba(255,255,255,0.6);
+            border-radius: 28px;
+            padding: 18px;
+            max-height: 260px;
+            overflow-y: auto;
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .msg {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .msg.bot .bubble {
+            background: white;
+            border-radius: 22px 22px 22px 6px;
+            padding: 14px 20px;
+            color: #1f2e44;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            max-width: 80%;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        .msg.user {
+            flex-direction: row-reverse;
+        }
+
+        .msg.user .bubble {
+            background: #d1e5ff;
+            border-radius: 22px 22px 6px 22px;
+            padding: 14px 20px;
+            color: #003366;
+            box-shadow: 0 4px 10px rgba(70,130,200,0.1);
+            max-width: 80%;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            border: none;
+            background: white;
+            border-radius: 60px;
+            padding: 16px 22px;
+            font-size: 1rem;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.02);
+            border: 1px solid rgba(220,235,255,0.9);
+        }
+
+        .chat-input-area input:focus {
+            outline: 2px solid #9bbfff;
+        }
+
+        .chat-input-area button {
+            background: #2e405b;
+            border: none;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 14px #a5b9d0;
+            transition: 0.15s;
+            border: 1px solid #ffffff90;
+        }
+
+        .chat-input-area button:active {
+            transform: scale(0.94);
+        }
+
+        /* 情感分析卡片 */
+        .analysis-card {
+            background: linear-gradient(135deg, #e7f0fd, #dae6f5);
+            border-radius: 30px;
+            padding: 22px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid white;
+        }
+
+        .sentiment-text {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #1e3b5c;
+        }
+
+        .sentiment-score {
+            background: #2f5575;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            box-shadow: inset 0 -2px 0 #102a40;
+        }
+
+        .encouragement {
+            font-size: 1rem;
+            color: #25415b;
+            background: rgba(255,255,255,0.6);
+            border-radius: 28px;
+            padding: 12px 20px;
+            border: 1px dashed white;
+        }
+
+        footer {
+            text-align: center;
+            color: #5a6f88;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧悬浮球模块：提醒、触碰互动、主动关怀 -->
+        <div class="float-ball-panel">
+            <div class="ball-header">
+                <div class="avatar-bubble" id="petAvatar" title="戳我互动 (触碰互动)">
+                    🐣
+                </div>
+                <span class="greeting" id="greetingMsg">嗨，打工累了没？</span>
+            </div>
+            <!-- 行为数据收集 + 主动关怀提醒 -->
+            <div class="reminder-stack">
+                <div class="remind-item" id="waterRemind">
+                    <div class="remind-icon">💧</div>
+                    <span class="remind-text">喝水提醒</span>
+                    <span class="remind-time" id="waterTime">最近未记录</span>
+                </div>
+                <div class="remind-item" id="standRemind">
+                    <div class="remind-icon">🧍</div>
+                    <span class="remind-text">站立/拉伸</span>
+                    <span class="remind-time" id="standTime">最近未记录</span>
+                </div>
+                <div class="remind-item" id="moodRemind">
+                    <div class="remind-icon">📝</div>
+                    <span class="remind-text">情绪日记</span>
+                    <span class="remind-time" id="moodTime">今日未记</span>
+                </div>
+            </div>
+            <!-- 触碰互动额外反馈区 -->
+            <div style="text-align: center; margin-top: 10px; font-size: 0.95rem; color: #3e5570; background: rgba(255,255,240,0.7); border-radius: 50px; padding: 8px;" id="touchFeedback">
+                戳我一下嘛 👆
+            </div>
+        </div>
+
+        <!-- 右侧主面板 (聊天 + 日记 + 分析) -->
+        <div class="main-panel">
+            <!-- 情绪日记区块 (可收集行为数据) -->
+            <div class="diary-section">
+                <div class="section-title">
+                    <span>📖</span>
+                    <h2>情绪日记</h2>
+                </div>
+                <div class="mood-tag-list" id="moodTagsContainer">
+                    <!-- 由JS动态生成，但可以写静态备用 -->
+                </div>
+                <div class="diary-input-area">
+                    <textarea id="diaryEntry" placeholder="记录今天的心情故事…… (例如：今天完成了好多任务，但有点累)" rows="2"></textarea>
+                    <button class="save-diary-btn" id="saveDiaryBtn">💾 保存今日记录</button>
+                </div>
+            </div>
+
+            <!-- 聊天互动 + 情感分析区域 -->
+            <div class="chat-window">
+                <div class="message-history" id="chatHistory">
+                    <div class="msg bot">
+                        <div class="bubble">你好呀！我是你的暖心小伙伴。最近怎么样？可以和我聊天，也可以戳戳左边的悬浮球~</div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="说点什么... 比如“今天好累”" />
+                    <button id="sendMsgBtn">💬</button>
+                </div>
+            </div>
+
+            <!-- 情感分析和正面鼓励卡片 -->
+            <div class="analysis-card">
+                <div>
+                    <div class="sentiment-text" id="sentimentLabel">情感分析 · 等待对话</div>
+                    <div class="encouragement" id="encourageText">我会一直陪着你~</div>
+                </div>
+                <div class="sentiment-score" id="sentimentScore">😐</div>
+            </div>
+            <footer>✨ 主动关怀 · 情绪日记 · 触碰互动 ✨</footer>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- 模拟数据库 / 行为数据收集 ----------
+            let userBehavior = {
+                lastWater: null,       // 时间戳
+                lastStand: null,
+                lastMoodDate: '',      // 日期字符串 YYYY-MM-DD
+                moodDiaries: [],        // 储存 { date, text, moodTag }
+            };
+
+            // 当前选中的情绪标签
+            let selectedMood = '😌平静';
+
+            // 聊天记录数组用于情感分析 (简易)
+            let chatMessages = [
+                { role: 'bot', content: '你好呀！我是你的暖心小伙伴。最近怎么样？可以和我聊天，也可以戳戳左边的悬浮球~' }
+            ];
+
+            // 初始化左侧提醒文案
+            function updateReminderUITime() {
+                const now = new Date();
+                const todayStr = now.toISOString().slice(0,10);
+
+                // 喝水 (模拟: 点击后记录时间)
+                const waterEl = document.getElementById('waterTime');
+                if (userBehavior.lastWater) {
+                    const d = new Date(userBehavior.lastWater);
+                    waterEl.innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    waterEl.innerText = '未记录';
+                }
+
+                const standEl = document.getElementById('standTime');
+                if (userBehavior.lastStand) {
+                    const d = new Date(userBehavior.lastStand);
+                    standEl.innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    standEl.innerText = '未记录';
+                }
+
+                // 情绪日记状态
+                const moodTimeEl = document.getElementById('moodTime');
+                if (userBehavior.lastMoodDate === todayStr) {
+                    moodTimeEl.innerText = '今日已记';
+                } else {
+                    moodTimeEl.innerText = '今日未记';
+                }
+            }
+
+            // 初始化情绪标签
+            const moodTags = ['😊开心', '😌平静', '😔低落', '😤焦虑', '🥰感动', '😴疲惫'];
+            const tagContainer = document.getElementById('moodTagsContainer');
+            function renderMoodTags() {
+                tagContainer.innerHTML = '';
+                moodTags.forEach(tag => {
+                    const span = document.createElement('span');
+                    span.className = `mood-tag ${selectedMood === tag ? 'selected' : ''}`;
+                    span.innerText = tag;
+                    span.addEventListener('click', (e) => {
+                        document.querySelectorAll('.mood-tag').forEach(t => t.classList.remove('selected'));
+                        span.classList.add('selected');
+                        selectedMood = tag;
+                    });
+                    tagContainer.appendChild(span);
+                });
+            }
+            renderMoodTags();
+
+            // 保存日记 (收集行为数据)
+            document.getElementById('saveDiaryBtn').addEventListener('click', () => {
+                const diaryText = document.getElementById('diaryEntry').value.trim();
+                if (!diaryText) {
+                    alert('写点内容再保存吧~');
+                    return;
+                }
+                const today = new Date().toISOString().slice(0,10);
+                userBehavior.lastMoodDate = today;
+                // 简易存储最近一条日记
+                userBehavior.moodDiaries.push({
+                    date: today,
+                    text: diaryText,
+                    moodTag: selectedMood
+                });
+                // 更新提醒UI
+                updateReminderUITime();
+                document.getElementById('moodTime').innerText = '今日已记';
+                // 可选: 清空输入框，但保留作为展示
+                // 同时给出积极反馈
+                alert('✨ 日记已记录，你真棒！');
+                // 同时向聊天历史追加一条系统鼓励? 可以加在聊天里
+                addBotMessage('我看到你记录了情绪日记，真不错！记得多关照自己内心～');
+                // 情感分析简单更新
+                analyzeSentimentFromText(diaryText);
+                document.getElementById('diaryEntry').value = '';  // 清空
+            });
+
+            // 新增bot消息 (并更新聊天UI)
+            function addBotMessage(text) {
+                chatMessages.push({ role: 'bot', content: text });
+                const historyDiv = document.getElementById('chatHistory');
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'msg bot';
+                msgDiv.innerHTML = `<div class="bubble">${text}</div>`;
+                historyDiv.appendChild(msgDiv);
+                historyDiv.scrollTop = historyDiv.scrollHeight;
+            }
+
+            function addUserMessage(text) {
+                chatMessages.push({ role: 'user', content: text });
+                const historyDiv = document.getElementById('chatHistory');
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'msg user';
+                msgDiv.innerHTML = `<div class="bubble">${text}</div>`;
+                historyDiv.appendChild(msgDiv);
+                historyDiv.scrollTop = historyDiv.scrollHeight;
+            }
+
+            // 简单情感分析 (基于关键词) + 正面鼓励
+            function analyzeSentimentFromText(text) {
+                if (!text) return;
+                const lower = text.toLowerCase();
+                let sentiment = '中性';
+                let scoreEmoji = '😐';
+                let encouragement = '一切都会慢慢变好，保持呼吸～';
+
+                if (lower.includes('累') || lower.includes('困') || lower.includes('疲惫') || lower.includes('压力')) {
+                    sentiment = '疲惫/压力';
+                    scoreEmoji = '😔';
+                    encouragement = '你辛苦啦！记得站起来走走，喝口水休息片刻。';
+                } else if (lower.includes('开心') || lower.includes('高兴') || lower.includes('棒') || lower.includes('好')) {
+                    sentiment = '积极';
+                    scoreEmoji = '😊';
+                    encouragement = '太棒啦！保持这份心情，你值得所有的美好。';
+                } else if (lower.includes('烦') || lower.includes('焦虑') || lower.includes('紧张') || lower.includes('难受')) {
+                    sentiment = '焦虑/烦躁';
+                    scoreEmoji = '😟';
+                    encouragement = '感到焦虑是正常的，深呼吸，我在这里陪着你。';
+                } else if (lower.includes('感动') || lower.includes('温暖')) {
+                    sentiment = '感动';
+                    scoreEmoji = '🥰';
+                    encouragement = '真好，温暖的感觉要记住哦。';
+                } else if (lower.includes('低落') || lower.includes('难过') || lower.includes('伤心')) {
+                    sentiment = '低落';
+                    scoreEmoji = '😢';
+                    encouragement = '抱抱你，无论怎样，你都不是一个人。';
+                }
+
+                document.getElementById('sentimentLabel').innerText = `情感分析 · ${sentiment}`;
+                document.getElementById('sentimentScore').innerText = scoreEmoji;
+                document.getElementById('encourageText').innerText = encouragement;
+            }
+
+            // 发送聊天消息
+            function handleUserMessage(msg) {
+                if (!msg.trim()) return;
+                addUserMessage(msg);
+                // 情感分析基于最新用户消息
+                analyzeSentimentFromText(msg);
+
+                // 模拟bot回复 + 主动关怀融入
+                setTimeout(() => {
+                    let reply = '';
+                    if (msg.includes('累') || msg.includes('困')) {
+                        reply = '辛苦啦！喝点水，或者站起来伸个懒腰吧～ 我待会再提醒你。';
+                    } else if (msg.includes('开心') || msg.includes('哈哈')) {
+                        reply = '看到你开心我也开心！今天有什么好事吗？可以记录在情绪日记里。';
+                    } else if (msg.includes('烦') || msg.includes('焦虑')) {
+                        reply = '慢慢来，不必给自己太大压力。需要我陪你聊聊天还是提醒你放松？';
+                    } else {
+                        reply = '我一直在听。对了，记得多照顾身体，要主动喝水和站立哦。';
+                    }
+                    addBotMessage(reply);
+                }, 400);
+
+                // 模拟主动关怀收集数据 (对话中的行为暗示)
+                if (msg.includes('喝水') || msg.includes('渴')) {
+                    userBehavior.lastWater = Date.now();
+                    updateReminderUITime();
+                    addBotMessage('💧 好的，已帮你记录喝水时间，真棒！');
+                }
+                if (msg.includes('站') || msg.includes('拉伸') || msg.includes('活动')) {
+                    userBehavior.lastStand = Date.now();
+                    updateReminderUITime();
+                    addBotMessage('🧍 拉伸一下很好，已为你更新站立提醒。');
+                }
+
+                document.getElementById('chatInput').value = '';
+            }
+
+            // 事件绑定
+            document.getElementById('sendMsgBtn').addEventListener('click', () => {
+                const input = document.getElementById('chatInput');
+                handleUserMessage(input.value);
+            });
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('sendMsgBtn').click();
+                }
+            });
+
+            // 触碰互动: 左侧悬浮球点击和悬停反馈
+            const avatar = document.getElementById('petAvatar');
+            const touchFeedback = document.getElementById('touchFeedback');
+            avatar.addEventListener('click', () => {
+                // 触碰互动(点击)
+                touchFeedback.innerText = '✨ 谢谢戳戳，暖心能量+1 ✨';
+                setTimeout(() => {
+                    touchFeedback.innerText = '戳我互动(触碰/点击)';
+                }, 2000);
+                // 同时也可以给予鼓励对话
+                addBotMessage('你戳了我一下！好温暖～ 要继续照顾好自己哦。');
+                // 情感分析鼓励
+                analyzeSentimentFromText('触碰互动 开心');
+            });
+            // 模拟触碰悬浮球效果
+            avatar.addEventListener('mouseenter', () => {
+                avatar.style.transform = 'scale(1.05)';
+            });
+            avatar.addEventListener('mouseleave', () => {
+                avatar.style.transform = 'scale(1)';
+            });
+
+            // 主动关怀点击：喝水提醒
+            document.getElementById('waterRemind').addEventListener('click', () => {
+                userBehavior.lastWater = Date.now();
+                updateReminderUITime();
+                addBotMessage('💙 喝水记录已更新！记得每天保持足够水分～');
+                analyzeSentimentFromText('喝水提醒 积极');
+            });
+            document.getElementById('standRemind').addEventListener('click', () => {
+                userBehavior.lastStand = Date.now();
+                updateReminderUITime();
+                addBotMessage('🧘 站立/拉伸已记录！活动一下对身体好。');
+                analyzeSentimentFromText('站立提醒 健康');
+            });
+            document.getElementById('moodRemind').addEventListener('click', () => {
+                document.getElementById('diaryEntry').scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('diaryEntry').focus();
+            });
+
+            // 页面启动时 尝试获取之前可能存在的日记记录 (模拟)
+            // 设置一句随机的初始问候
+            const greetings = ['今天也要开心哟', '记得喝水小可爱', '累了就歇会儿', '戳戳我聊天'];
+            setInterval(() => {
+                // 随机切换悬浮球的问候语（被动主动关怀）
+                const randomIdx = Math.floor(Math.random() * greetings.length);
+                document.getElementById('greetingMsg').innerText = greetings[randomIdx];
+            }, 8000);
+
+            // 另每过45分钟提醒? 用setTimeout示意主动关怀 (避免太频繁，这里仅做模拟)
+            function proactiveReminder() {
+                // 检查上次喝水时间 (若超过45分钟)
+                if (userBehavior.lastWater) {
+                    const diff = Date.now() - userBehavior.lastWater;
+                    if (diff > 45 * 60 * 1000) {
+                        addBotMessage('⏰ 快一小时没喝水啦，喝口水润润喉吧～');
+                    }
+                } else {
+                    // 还没记录过，提示
+                    if (Math.random() > 0.7) addBotMessage('今天喝水了吗？要记得补充水分哦。');
+                }
+                if (userBehavior.lastStand) {
+                    const diff = Date.now() - userBehavior.lastStand;
+                    if (diff > 90 * 60 * 1000) {
+                        addBotMessage('🧘 坐了很久了，站起来拉伸一下～');
+                    }
+                } else {
+                    if (Math.random() > 0.6) addBotMessage('久坐容易累，记得偶尔站起来走走。');
+                }
+            }
+            setInterval(proactiveReminder, 2 * 60 * 1000); // 2分钟模拟一次检查 (演示用，实际可调整)
+
+            // 初始化UI
+            updateReminderUITime();
+
+            // 预置情感分析
+            analyzeSentimentFromText('开始聊天');
+        })();
+    </script>
+</body>
+</html>
